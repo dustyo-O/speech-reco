@@ -14,6 +14,9 @@ var fs = require('fs'),
     passport = require('passport'),
     // LocalStrategy = require('passport-local').Strategy,
     csrf = require('csurf'),
+    multer = require('multer'),
+    upload = multer({ dest: 'uploads/' }),
+    attach = upload.single('attach'),
     compression = require('compression'),
 
     config = require('./config'),
@@ -45,6 +48,7 @@ app
     }))
     .use(passport.initialize())
     .use(passport.session())
+    .use(attach)
     .use(csrf());
 
 // NOTE: conflicts with livereload
@@ -74,6 +78,23 @@ app.get('/', function(req, res) {
             }
         }
     })
+});
+
+app.post('/', attach, function(req, res) {
+    if (!req.file)
+        return res.status(400).send('No files were uploaded.');
+
+    const convert = require('./convert'),
+        uploadedFile = req.file,
+        originalFilename = uploadedFile.originalname,
+        originalExtension = originalFilename.indexOf('.') === -1 ?
+            '' : originalFilename.split('.').pop(),
+        filePath = uploadedFile.path,
+        newPath = filePath + '.' + originalExtension;
+
+    fs.rename(filePath, newPath, () => {
+        convert(newPath, res);
+    });
 });
 
 isDev && require('./rebuild')(app);

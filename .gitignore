@@ -5,6 +5,8 @@ node_modules/
 .svn
 npm-debug.log
 
+uploads/*.*
+
 static/index.min.*
 
 # bem
